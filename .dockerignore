@@ -1,0 +1,14 @@
+# Dependencias y registros locales de npm
+node_modules
+npm-debug.log
+
+# Archivos del repositorio Git
+.git
+.gitignore
+
+# Variables de entorno locales
+.env
+
+# Documentación y evidencias no necesarias en la imagen
+README.md
+evidencias
