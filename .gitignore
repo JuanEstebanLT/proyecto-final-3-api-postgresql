@@ -1,0 +1,11 @@
+# ======================================================
+# DEPENDENCIAS
+# ======================================================
+# Esta carpeta se genera al instalar los paquetes de npm.
+node_modules/
+
+# ======================================================
+# VARIABLES DE ENTORNO
+# ======================================================
+# Este archivo puede contener configuraciones locales.
+.env
