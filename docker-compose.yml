@@ -1,0 +1,94 @@
+services:
+  # ======================================================
+  # POSTGRESQL
+  # ======================================================
+  # Almacena los productos en un volumen persistente y se
+  # comunica únicamente con los otros servicios de la red.
+  db:
+    image: postgres:16-alpine
+    container_name: proyecto3-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
+    # Los archivos de docker-entrypoint-initdb.d se ejecutan
+    # solo al inicializar por primera vez un volumen vacío.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - proyecto3_network
+
+  # ======================================================
+  # API NODE.JS
+  # ======================================================
+  # Construye la imagen local y usa el nombre db para
+  # conectarse internamente con PostgreSQL.
+  api:
+    build:
+      context: .
+    container_name: proyecto3-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT}:3000"
+    environment:
+      PORT: 3000
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - proyecto3_network
+
+  # ======================================================
+  # PGADMIN
+  # ======================================================
+  # Proporciona una interfaz web para administrar PostgreSQL.
+  # La conexión a la base debe utilizar db como host.
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    container_name: proyecto3-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "${PGADMIN_PORT}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - proyecto3_network
+
+# ======================================================
+# VOLÚMENES PERSISTENTES
+# ======================================================
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+# ======================================================
+# RED PERSONALIZADA
+# ======================================================
+# Los tres servicios se comunican mediante una red bridge.
+networks:
+  proyecto3_network:
+    driver: bridge
