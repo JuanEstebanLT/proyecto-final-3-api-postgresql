@@ -59,11 +59,17 @@ app.get('/', (req, res) => {
  * ======================================================
  * RUTA DE ESTADO
  * ======================================================
- * Esta ruta entrega una respuesta sencilla que indica que
- * el servicio se encuentra disponible.
+ * Comprueba que PostgreSQL responda mediante una consulta
+ * sencilla y comunica el estado sin exponer datos internos.
  */
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1;');
+    res.status(200).json({ status: 'ok', database: 'connected' });
+  } catch (error) {
+    console.error('Error al comprobar la conexión con PostgreSQL:', error);
+    res.status(503).json({ status: 'error', database: 'disconnected' });
+  }
 });
 
 /*
